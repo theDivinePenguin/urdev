@@ -1,4 +1,4 @@
-# 🌍 UrDev: Urban Expansion CLI
+# UrDev: Urban Expansion CLI
 
 **UrDev** is an automated spatial analysis pipeline that leverages **Google Earth Engine (GEE)** to analyze and visualize urban land-cover expansion globally. 
 
@@ -6,7 +6,7 @@ Using high-resolution (10-meter) satellite imagery from Google Dynamic World V1,
 
 ---
 
-## ⚡ Quick Start
+## Quick Start
 
 ### 1. Requirements and Setup
 Ensure you have the Python dependencies installed (`osmnx`, `rasterio`, `geopandas`, etc.), and authenticate your local environment with Earth Engine:
@@ -23,21 +23,21 @@ python generate.py --location "Manhattan, New York" --start-year 2020 --end-year
 
 ---
 
-## 📸 Generated Outputs
+## Generated Outputs
 
 Because the UrDev pipeline is dynamically driven by the configuration files and OSMnx queries, you can run it on varying geographical regions. Below are examples of the pipeline outputs demonstrating land-cover transitions over time.
 
-### 🏙️ Manhattan, New York (2020 vs 2021)
+### Manhattan, New York (2020 vs 2021)
 | 2020 | 2021 |
 |:---:|:---:|
 | ![Manhattan 2020](assets/manhattan_2020.png) | ![Manhattan 2021](assets/manhattan_2021.png) |
 
-### 🇮🇳 Hyderabad, India (2016 vs 2026)
+### Hyderabad, India (2016 vs 2026)
 | 2016 | 2026 |
 |:---:|:---:|
 | ![Hyderabad 2016](assets/hyderabad_2016.png) | ![Hyderabad 2026](assets/hyderabad_2026.png) |
 
-### 🛶 Venice, Italy (2016 vs 2026)
+### Venice, Italy (2016 vs 2026)
 | 2016 | 2026 |
 |:---:|:---:|
 | ![Venice 2016](assets/venice_2016.png) | ![Venice 2026](assets/venice_2026.png) |
@@ -46,7 +46,7 @@ Because the UrDev pipeline is dynamically driven by the configuration files and 
 
 *(Legend: Red denotes built-up/urban infrastructure, Green denotes vegetation, Blue denotes water bodies).*
 
-### 📊 10-Year Statistical Trend (Manhattan, NY)
+### 10-Year Statistical Trend (Manhattan, NY)
 Because the pipeline automatically runs `generate_analysis.py` after stitching the imagery, it exports exact pixel-area calculations (in km²) for every landcover class. 
 
 Here is the exact progression of Manhattan's landcover over the decade:
@@ -65,7 +65,7 @@ Here is the exact progression of Manhattan's landcover over the decade:
 | **2025** | 94.12 | 9.83 | 2.15 | 2.66 | 0.32 | 3.75 | 259.76 | 4.06 | 5.35 |
 | **2026** | 94.68 | 12.30 | 2.15 | 2.36 | 0.70 | 1.73 | 261.74 | 2.34 | 4.00 |
 
-### 📊 10-Year Statistical Trend (GHMC, Hyderabad)
+### 10-Year Statistical Trend (GHMC, Hyderabad)
 For comparison, here is the exact progression of Hyderabad's (GHMC) landcover, showcasing massive urban expansion:
 
 | Year | Water | Trees | Grass | Flooded Veg | Crops | Shrub/Scrub | Built | Bare | Snow/Ice |
@@ -84,7 +84,7 @@ For comparison, here is the exact progression of Hyderabad's (GHMC) landcover, s
 
 ---
 
-## 📁 System Architecture
+## System Architecture
 - **`generate.py`**: The main CLI orchestrator. It handles geocoding via OpenStreetMap, configuration file rewriting, and subprocess execution for the pipeline.
 - **`pipeline/`**: The core modular Python codebase. It contains functions for fetching geometries (`boundary.py`), defining standardized grids (`tiler.py`), and managing metadata schemas (`metadata.py`).
 - **`scripts/`**: Executable runners that perform the heavy lifting:
