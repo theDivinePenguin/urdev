@@ -42,10 +42,7 @@ Because the UrDev pipeline is dynamically driven by the configuration files and 
 |:---:|:---:|
 | ![Venice 2016](assets/venice_2016.png) | ![Venice 2026](assets/venice_2026.png) |
 
-### 🦁 Singapore (2016 vs 2026)
-| 2016 | 2026 |
-|:---:|:---:|
-| ![Singapore 2016](assets/singapore_2016.png) | ![Singapore 2026](assets/singapore_2026.png) |
+
 
 *(Legend: Red denotes built-up/urban infrastructure, Green denotes vegetation, Blue denotes water bodies).*
 
