@@ -1,0 +1,150 @@
+import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import ee
+import yaml
+import requests
+import zipfile
+import io
+import rasterio
+
+from pipeline.boundary import get_city_boundary
+from pipeline.tiler import generate_tiles, format_tile_name
+from pipeline.metadata import init_dataset_manifest, append_tile_metadata
+
+def load_config(config_path="config.yaml"):
+    with open(config_path, 'r') as f:
+        return yaml.safe_load(f)
+
+def get_pixel_counts(tif_path):
+    try:
+        with rasterio.open(tif_path) as src:
+            data = src.read(1)
+            nodata_val = 255
+            valid_mask = (data != nodata_val)
+            return int(valid_mask.sum()), int((~valid_mask).sum())
+    except Exception as e:
+        print(f"Error reading {tif_path}: {e}")
+        return 0, 0
+
+def download_tile(image, tile, year, source, output_dir, scale=10):
+    tile_name = format_tile_name(tile['row'], tile['col'])
+    filename = f"{tile_name}.tif"
+    year_dir = os.path.join(output_dir, source, str(year))
+    os.makedirs(year_dir, exist_ok=True)
+    filepath = os.path.join(year_dir, filename)
+    
+    if os.path.exists(filepath):
+        print(f"Skipping {filepath}, already exists.")
+        valid, nodata = get_pixel_counts(filepath)
+        return filepath, valid, nodata
+
+    try:
+        url = image.getDownloadURL({
+            'scale': scale,
+            'region': tile['geom'],
+            'format': 'GEO_TIFF'
+        })
+        print(f"Downloading {tile_name} for {year}...")
+        response = requests.get(url)
+        if response.status_code == 200:
+            try:
+                with zipfile.ZipFile(io.BytesIO(response.content)) as z:
+                    tif_files = [f for f in z.namelist() if f.endswith('.tif')]
+                    if tif_files:
+                        with open(filepath, 'wb') as f:
+                            f.write(z.read(tif_files[0]))
+                    else:
+                        print(f"No tif found in zip for {tile_name}")
+                        return None, 0, 0
+            except zipfile.BadZipFile:
+                with open(filepath, 'wb') as f:
+                    f.write(response.content)
+            
+            valid, nodata = get_pixel_counts(filepath)
+            return filepath, valid, nodata
+        else:
+            print(f"Failed to download {tile_name}. Status code: {response.status_code}")
+    except Exception as e:
+        print(f"Earth Engine error on {tile_name}: {e}")
+    return None, 0, 0
+
+def build_dataset(config):
+    dataset_dir = f"urban_dataset_{config['dataset_version']}"
+    os.makedirs(dataset_dir, exist_ok=True)
+    
+    # 1. Initialize Metadata Manifest
+    init_dataset_manifest(dataset_dir, config)
+    
+    # 2. Get Boundary
+    print(f"Fetching boundary for {config['roi']['boundary']}...")
+    boundary = get_city_boundary(config)
+    
+    # 3. Generate Tiles
+    print("Generating tiles...")
+    tiles = generate_tiles(boundary, config['tile_size_px'])
+    if not tiles:
+        print(f"No tiles generated for {config['roi']['boundary']}. Exiting.")
+        return
+        
+    print(f"Generated {len(tiles)} tiles intersecting {config['roi']['boundary']}.")
+    
+    # 4. Download per year
+    start_year = config['start_year']
+    end_year = config['end_year']
+    source = config['source']
+    
+    for year in range(start_year, end_year + 1):
+        # We assume Dynamic World for now as requested
+        start_date = f"{year}-{config['season']['start_month']:02d}-01"
+        # Rough end date assuming end_month is valid
+        end_date = f"{year}-{config['season']['end_month']:02d}-28"
+        
+        # Filter DW and clip to exact city boundary
+        dw = ee.ImageCollection('GOOGLE/DYNAMICWORLD/V1') \
+               .filterBounds(boundary.geometry()) \
+               .filterDate(start_date, end_date)
+               
+        # We compute the mode of the 'label' band.
+        # We DO NOT clip it to the irregular city boundary. We want full square tiles!
+        # The region bounds will automatically handle the extent.
+        image = dw.select('label').mode().unmask(255)
+        
+        for tile in tiles:
+            filepath, valid_px, nodata_px = download_tile(
+                image, tile, year, source, dataset_dir, scale=10
+            )
+            
+            if filepath:
+                # Append to metadata
+                # Use relative path for portability
+                rel_path = os.path.relpath(filepath, dataset_dir)
+                tile_id = f"{source}_{year}_{format_tile_name(tile['row'], tile['col'])}"
+                record = {
+                    "tile_id": tile_id,
+                    "row": tile['row'],
+                    "col": tile['col'],
+                    "year": year,
+                    "source": source,
+                    "path": rel_path,
+                    "bbox": tile['bbox'],
+                    "valid_pixels": valid_px,
+                    "nodata_pixels": nodata_px
+                }
+                append_tile_metadata(dataset_dir, record)
+
+        print(f"--- Completed {year} ---")
+
+    print("\n--- Pipeline Execution Complete ---")
+
+if __name__ == '__main__':
+    try:
+        ee.Initialize()
+    except Exception as e:
+        print(f"Earth Engine Initialization Failed: {e}")
+        print("If you see 'no project found', you need to set a default Google Cloud project.")
+        print("Run: earthengine set_project YOUR_PROJECT_ID")
+        sys.exit(1)
+        
+    cfg = load_config()
+    build_dataset(cfg)

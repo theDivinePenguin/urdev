@@ -1,0 +1,48 @@
+dataset:
+  base_dir: ~/Documents/urdev
+  name: urban_dataset_manhattan_new_york
+  pixel_resolution_m: 10
+visualizations:
+  years_to_mosaic:
+  - 2020
+  - 2021
+  change_maps:
+  - name: change_2016_2026
+    year1: 2016
+    year2: 2026
+    target_class: 6
+    highlight_color:
+    - 255
+    - 0
+    - 128
+    - 255
+  - name: change_22_23
+    year1: 2022
+    year2: 2023
+    target_class: 1
+    highlight_color:
+    - 0
+    - 255
+    - 0
+    - 255
+  palette:
+  - '#419BDF'
+  - '#397D49'
+  - '#88B053'
+  - '#7A87C6'
+  - '#E49635'
+  - '#DFC35A'
+  - '#C4281B'
+  - '#A59B8F'
+  - '#B39FE1'
+analysis:
+  transition_pairs:
+  - - 2016
+    - 2026
+  - - 2016
+    - 2020
+  - - 2020
+    - 2026
+regions:
+  osmnx_place_query: Manhattan, New York
+  admin_level: '10'
