@@ -11,6 +11,7 @@ import rasterio
 from pipeline.boundary import get_city_boundary
 from pipeline.tiler import generate_tiles, format_tile_name
 from pipeline.metadata import init_dataset_manifest, append_tile_metadata
+from pipeline.datasets import get_dataset_profile
 
 def load_config(config_path="config.yaml"):
     with open(config_path, 'r') as f:
@@ -92,27 +93,44 @@ def build_dataset(config):
     # 4. Download per year
     start_year = config['start_year']
     end_year = config['end_year']
-    source = config['source']
     
-    for year in range(start_year, end_year + 1):
-        # We assume Dynamic World for now as requested
+    endpoints_only = config.get('endpoints_only', False)
+    if endpoints_only and start_year != end_year:
+        years_to_process = [start_year, end_year]
+    else:
+        years_to_process = range(start_year, end_year + 1)
+    
+    dataset_name = config.get('dataset', 'dynamic_world')
+    dataset_profile = get_dataset_profile(dataset_name)
+    
+    for year in years_to_process:
         start_date = f"{year}-{config['season']['start_month']:02d}-01"
-        # Rough end date assuming end_month is valid
         end_date = f"{year}-{config['season']['end_month']:02d}-28"
         
-        # Filter DW and clip to exact city boundary
-        dw = ee.ImageCollection('GOOGLE/DYNAMICWORLD/V1') \
+        collection = ee.ImageCollection(dataset_profile['collection']) \
                .filterBounds(boundary.geometry()) \
                .filterDate(start_date, end_date)
                
-        # We compute the mode of the 'label' band.
-        # We DO NOT clip it to the irregular city boundary. We want full square tiles!
-        # The region bounds will automatically handle the extent.
-        image = dw.select('label').mode().unmask(255)
+        # Handle globally sparse early years cleanly
+        sparse_year = dataset_profile.get('sparse_before_year')
+        if sparse_year and year < sparse_year:
+            print(f"[{year}] Year is prior to reliable dense coverage (sparse_before_year={sparse_year}). Expanding search to full year {year}...")
+            start_date = f"{year}-01-01"
+            end_date = f"{year}-12-31"
+            collection = ee.ImageCollection(dataset_profile['collection']) \
+                   .filterBounds(boundary.geometry()) \
+                   .filterDate(start_date, end_date)
+               
+        if dataset_profile['reducer'] == 'mode':
+            image = collection.select(dataset_profile['band']).mode().unmask(255)
+        elif dataset_profile['reducer'] == 'mean':
+            image = collection.select(dataset_profile['band']).mean().unmask(255)
+        else:
+            image = collection.select(dataset_profile['band']).first().unmask(255) # fallback
         
         for tile in tiles:
             filepath, valid_px, nodata_px = download_tile(
-                image, tile, year, source, dataset_dir, scale=10
+                image, tile, year, dataset_name, dataset_dir, scale=dataset_profile['scale']
             )
             
             if filepath:

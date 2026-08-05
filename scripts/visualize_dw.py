@@ -30,9 +30,17 @@ def apply_palette(img):
 def visualize_tile(dataset_dir: str, row: int, col: int, year_start: int, year_end: int, output_png: str):
     tile_name = format_tile_name(row, col)
     
-    # We construct paths directly based on the dataset structure standard
-    tif_start = os.path.join(dataset_dir, "dynamic_world", str(year_start), f"{tile_name}.tif")
-    tif_end = os.path.join(dataset_dir, "dynamic_world", str(year_end), f"{tile_name}.tif")
+    # We construct paths directly based on the dataset structure standard    # We need to get dataset_name. We can read from config or assume passed.
+    import yaml
+    try:
+        with open('config.yaml', 'r') as f:
+            config = yaml.safe_load(f)
+        dataset_name = config.get('dataset', 'dynamic_world')
+    except:
+        dataset_name = 'dynamic_world'
+        
+    tif_start = os.path.join(dataset_dir, dataset_name, str(year_start), f"{tile_name}.tif")
+    tif_end = os.path.join(dataset_dir, dataset_name, str(year_end), f"{tile_name}.tif")
     
     if not os.path.exists(tif_start) or not os.path.exists(tif_end):
         print(f"Skipping visualization, missing tiles for {tile_name}")
@@ -66,11 +74,12 @@ if __name__ == '__main__':
     parser.add_argument('--col', type=int, default=2)
     args = parser.parse_args()
     
-    with open('config.yaml', 'r') as f:
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.yaml")
+    with open(config_path, "r") as f:
         config = yaml.safe_load(f)
         
-    dataset_version = config.get('dataset_version', 'v1')
-    base_dir = os.path.join(os.path.expanduser('~'), 'Documents', 'urdev', f'urban_dataset_{dataset_version}')
+    dataset_version = config.get('dataset_version', 'ghmc_new')
+    base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), f"urban_dataset_{dataset_version}")
     out_dir = os.path.join(base_dir, 'visualizations')
     os.makedirs(out_dir, exist_ok=True)
     

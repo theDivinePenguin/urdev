@@ -1,10 +1,12 @@
 roi:
-  boundary: manhattan_new_york
+  boundary: singapore
 start_year: 2020
 end_year: 2021
-dataset_version: manhattan_new_york
+dataset_version: singapore_vegetation
 tile_size_px: 512
 season:
   start_month: 1
   end_month: 5
 source: dynamic_world
+endpoints_only: false
+dataset: vegetation

@@ -4,16 +4,21 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import yaml
 
-def generate_charts(dataset_dir: str):
-    config_path = os.path.join(os.path.dirname(__file__), 'config.yaml')
+def load_config():
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.yaml")
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
-    
-    city_name = config.get('regions', {}).get('osmnx_place_query', 'Urban Area')
+    dataset_version = config.get("dataset_version", "manhattan_new_york")
     start_year = config.get('start_year', 2016)
     end_year = config.get('end_year', 2026)
+    base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), f"urban_dataset_{dataset_version}")
+    return base_dir, start_year, end_year
+
+def generate_charts(dataset_dir: str, **kwargs):
     analysis_dir = os.path.join(dataset_dir, "analysis")
     vis_dir = os.path.join(dataset_dir, "visualization")
+    start_year = kwargs.get('start_year', 2016)
+    end_year = kwargs.get('end_year', 2026)
     
     # 1. Urban Expansion Bar Chart
     yearly_csv = os.path.join(analysis_dir, "yearly_landcover.csv")
@@ -22,7 +27,7 @@ def generate_charts(dataset_dir: str):
         plt.figure(figsize=(10, 6))
         plt.bar(df['year'], df['built'], color='gray', zorder=2)
         plt.grid(axis='y', linestyle='--', alpha=0.7, zorder=1)
-        plt.title(f'{city_name} Urban Expansion ({start_year}-{end_year})')
+        plt.title(f'Urban Expansion ({start_year}-{end_year})')
         plt.xlabel('Year')
         plt.ylabel('Built Area (km²)')
         plt.ylim(700, 900)
@@ -34,7 +39,7 @@ def generate_charts(dataset_dir: str):
         print(f"Saved Urban Expansion chart to {chart_path}")
         
     # 2. Land Conversion Sankey Diagram
-    transition_csv = os.path.join(analysis_dir, "transition_matrix_2016_2026.csv")
+    transition_csv = os.path.join(analysis_dir, f"transition_matrix_{start_year}_{end_year}.csv")
     if os.path.exists(transition_csv):
         tdf = pd.read_csv(transition_csv)
         
@@ -68,11 +73,11 @@ def generate_charts(dataset_dir: str):
               value = values
           ))])
         
-        fig.update_layout(title_text="Land Cover Conversions (2016-2026) > 5 km²", font_size=10)
+        fig.update_layout(title_text=f"Land Cover Conversions ({start_year}-{end_year}) > 5 km²", font_size=10)
         sankey_path = os.path.join(vis_dir, "land_conversion_sankey.html")
         fig.write_html(sankey_path)
         print(f"Saved Sankey diagram to {sankey_path}")
 
 if __name__ == '__main__':
-    base_dir = os.path.join(os.path.expanduser('~'), 'Documents', 'urdev', 'urban_dataset_v7')
-    generate_charts(base_dir)
+    base_dir, start_year, end_year = load_config()
+    generate_charts(base_dir, start_year=start_year, end_year=end_year)

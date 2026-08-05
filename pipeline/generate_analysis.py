@@ -1,8 +1,11 @@
 import os
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import csv
 import json
 import rasterio
 import numpy as np
+import argparse
 from collections import defaultdict
 
 def load_class_names(dataset_dir: str) -> dict:
@@ -10,7 +13,9 @@ def load_class_names(dataset_dir: str) -> dict:
     if os.path.exists(json_path):
         with open(json_path, 'r') as f:
             data = json.load(f)
-            return {int(k): v for k, v in data.get("classes", {}).items()}
+            classes = data.get("classes")
+            if classes:
+                return {int(k): v for k, v in classes.items()}
     # Fallback
     return {
         0: 'Water', 1: 'Trees', 2: 'Grass', 3: 'Flooded vegetation',
@@ -59,6 +64,37 @@ def generate_yearly_landcover(dataset_dir: str, tiles_by_year: dict, class_names
             writer.writerow(row)
             print(f"Computed landcover for {year}")
 
+def generate_continuous_statistics(dataset_dir: str, tiles_by_year: dict, out_csv: str):
+    years = sorted(tiles_by_year.keys())
+    with open(out_csv, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["year", "mean", "min", "max", "std_dev"])
+        
+        for year in years:
+            all_valid_data = []
+            for tile_id, path in tiles_by_year[year].items():
+                try:
+                    with rasterio.open(path) as src:
+                        data = src.read(1)
+                        valid_data = data[data != 255]
+                        all_valid_data.append(valid_data)
+                except Exception as e:
+                    print(f"Error reading {path}: {e}")
+            
+            if all_valid_data:
+                combined = np.concatenate(all_valid_data)
+                if len(combined) > 0:
+                    mean_val = np.mean(combined)
+                    min_val = np.min(combined)
+                    max_val = np.max(combined)
+                    std_dev = np.std(combined)
+                    writer.writerow([year, round(mean_val, 4), round(min_val, 4), round(max_val, 4), round(std_dev, 4)])
+                    print(f"Computed continuous statistics for {year}")
+                else:
+                    writer.writerow([year, 0, 0, 0, 0])
+            else:
+                writer.writerow([year, 0, 0, 0, 0])
+
 def generate_transition_matrix(year1: int, year2: int, dataset_dir: str, tiles_by_year: dict, class_names: dict):
     out_csv = os.path.join(dataset_dir, "analysis", f"transition_matrix_{year1}_{year2}.csv")
     pixel_area_km2 = 100 / 1_000_000
@@ -106,23 +142,37 @@ def generate_transition_matrix(year1: int, year2: int, dataset_dir: str, tiles_b
     print(f"Generated transition matrix {year1} -> {year2}")
 
 def main():
-    dataset_dir = os.path.join(os.path.expanduser('~'), 'Documents', 'urdev', 'urban_dataset_v7')
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--dataset-dir", required=True, help="Path to the dataset directory")
+    parser.add_argument("--start-year", type=int, required=True, help="Start year")
+    parser.add_argument("--end-year", type=int, required=True, help="End year")
+    parser.add_argument("--dataset", type=str, default="dynamic_world", help="Dataset name")
+    args = parser.parse_args()
+
+    dataset_dir = args.dataset_dir
     analysis_dir = os.path.join(dataset_dir, "analysis")
     os.makedirs(analysis_dir, exist_ok=True)
     
-    class_names = load_class_names(dataset_dir)
+    from pipeline.datasets import get_dataset_profile
+    dataset_profile = get_dataset_profile(args.dataset)
+    
     tiles_by_year = get_tiles_by_year(dataset_dir)
     
-    print("Generating yearly landcover statistics...")
-    yearly_csv = os.path.join(analysis_dir, "yearly_landcover.csv")
-    generate_yearly_landcover(dataset_dir, tiles_by_year, class_names, yearly_csv)
-    
-    # Generate transitions for specific pairs requested by user:
-    # 2016-2026, 2016-2020, 2020-2026
-    pairs = [(2016, 2026), (2016, 2020), (2020, 2026)]
-    for y1, y2 in pairs:
-        print(f"Generating transition matrix for {y1} to {y2}...")
-        generate_transition_matrix(y1, y2, dataset_dir, tiles_by_year, class_names)
+    if dataset_profile['type'] == 'categorical':
+        class_names = load_class_names(dataset_dir)
+        print("Generating yearly landcover statistics...")
+        yearly_csv = os.path.join(analysis_dir, "yearly_landcover.csv")
+        generate_yearly_landcover(dataset_dir, tiles_by_year, class_names, yearly_csv)
+        
+        # Generate transitions for specific pairs requested by user:
+        pairs = [(args.start_year, args.end_year)]
+        for y1, y2 in pairs:
+            print(f"Generating transition matrix for {y1} to {y2}...")
+            generate_transition_matrix(y1, y2, dataset_dir, tiles_by_year, class_names)
+    else:
+        print("Generating continuous regional statistics...")
+        stats_csv = os.path.join(analysis_dir, "yearly_statistics.csv")
+        generate_continuous_statistics(dataset_dir, tiles_by_year, stats_csv)
         
     print("Analysis Phase Complete.")
 

@@ -3,7 +3,7 @@ import csv
 import rasterio
 import numpy as np
 
-def calculate_dataset_changes(dataset_dir: str, year_start: int, year_end: int, source: str = "dynamic_world"):
+def calculate_dataset_changes(dataset_dir: str, year_start: int, year_end: int, dataset_name: str = "dynamic_world"):
     metadata_csv = os.path.join(dataset_dir, "metadata", "tiles.csv")
     if not os.path.exists(metadata_csv):
         print("Dataset metadata not found.")
@@ -78,5 +78,12 @@ def calculate_dataset_changes(dataset_dir: str, year_start: int, year_end: int, 
             print(f"  - Lost {sq_km:.1f} sq km of {classes[val]}")
 
 if __name__ == '__main__':
-    base_dir = os.path.join(os.path.expanduser('~'), 'Documents', 'urdev', 'urban_dataset_v1')
-    calculate_dataset_changes(base_dir, 2016, 2026)
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.yaml")
+    with open(config_path, "r") as f:
+        config = __import__("yaml").safe_load(f)
+    dataset_version = config.get("dataset_version", "ghmc_new")
+    base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), f"urban_dataset_{dataset_version}")
+    
+    start_year = config.get("start_year", 2016)
+    end_year = config.get("end_year", 2026)
+    calculate_dataset_changes(base_dir, start_year, end_year)

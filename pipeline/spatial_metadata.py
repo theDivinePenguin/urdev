@@ -7,7 +7,13 @@ import numpy as np
 from datetime import datetime
 
 def generate_metadata(dataset_dir: str):
-    raw_dir = os.path.join(dataset_dir, "raw", "dynamic_world")
+    # Need to read dataset_name from config
+    import yaml
+    with open('config.yaml', 'r') as f:
+        config = yaml.safe_load(f)
+    dataset_name = config.get('dataset', 'dynamic_world')
+    
+    raw_dir = os.path.join(dataset_dir, dataset_name)
     metadata_dir = os.path.join(dataset_dir, "metadata")
     verification_dir = os.path.join(dataset_dir, "verification")
     
@@ -36,7 +42,7 @@ def generate_metadata(dataset_dir: str):
     print(f"Processing {len(tif_files)} tiles for metadata extraction...")
     
     for tif_path in tif_files:
-        # Expected path structure: raw/dynamic_world/{year}/{filename}
+        # Expected path structure: {dataset_name}/{year}/{filename}
         parts = tif_path.split(os.sep)
         year_str = parts[-2]
         filename = parts[-1]
@@ -137,5 +143,9 @@ def generate_metadata(dataset_dir: str):
 
 
 if __name__ == '__main__':
-    base_dir = os.path.join(os.path.expanduser('~'), 'Documents', 'urdev', 'urban_dataset_v7')
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config.yaml")
+    with open(config_path, "r") as f:
+        config = __import__("yaml").safe_load(f)
+    dataset_version = config.get("dataset_version", "manhattan_new_york")
+    base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), f"urban_dataset_{dataset_version}")
     generate_metadata(base_dir)
