@@ -71,7 +71,7 @@ def download_tile(image, tile, year, source, output_dir, scale=10):
     return None, 0, 0
 
 def build_dataset(config):
-    dataset_dir = f"urban_dataset_{config['dataset_version']}"
+    dataset_dir = f"data/urban_dataset_{config['dataset_version']}"
     os.makedirs(dataset_dir, exist_ok=True)
     
     # 1. Initialize Metadata Manifest
@@ -137,13 +137,13 @@ def build_dataset(config):
                 # Append to metadata
                 # Use relative path for portability
                 rel_path = os.path.relpath(filepath, dataset_dir)
-                tile_id = f"{source}_{year}_{format_tile_name(tile['row'], tile['col'])}"
+                tile_id = f"{dataset_name}_{year}_{format_tile_name(tile['row'], tile['col'])}"
                 record = {
                     "tile_id": tile_id,
                     "row": tile['row'],
                     "col": tile['col'],
                     "year": year,
-                    "source": source,
+                    "source": dataset_name,
                     "path": rel_path,
                     "bbox": tile['bbox'],
                     "valid_pixels": valid_px,

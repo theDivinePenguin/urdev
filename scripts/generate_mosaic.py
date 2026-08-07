@@ -23,7 +23,7 @@ dw_colors = [
 def main():
     with open('config.yaml', 'r') as f:
         config = yaml.safe_load(f)
-    dataset_dir = "urban_dataset_" + config['dataset_version']
+    dataset_dir = "data/urban_dataset_" + config['dataset_version']
     dataset_name = config.get('dataset', 'dynamic_world')
     data_dir = os.path.join(dataset_dir, dataset_name)
     if not os.path.exists(data_dir):

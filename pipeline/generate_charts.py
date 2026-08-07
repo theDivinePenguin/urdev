@@ -11,7 +11,7 @@ def load_config():
     dataset_version = config.get("dataset_version", "manhattan_new_york")
     start_year = config.get('start_year', 2016)
     end_year = config.get('end_year', 2026)
-    base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), f"urban_dataset_{dataset_version}")
+    base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", f"urban_dataset_{dataset_version}")
     return base_dir, start_year, end_year
 
 def generate_charts(dataset_dir: str, **kwargs):

@@ -79,7 +79,7 @@ if __name__ == '__main__':
         config = yaml.safe_load(f)
         
     dataset_version = config.get('dataset_version', 'ghmc_new')
-    base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), f"urban_dataset_{dataset_version}")
+    base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", f"urban_dataset_{dataset_version}")
     out_dir = os.path.join(base_dir, 'visualizations')
     os.makedirs(out_dir, exist_ok=True)
     

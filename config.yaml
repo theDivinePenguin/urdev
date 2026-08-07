@@ -1,12 +1,12 @@
 roi:
-  boundary: singapore
-start_year: 2020
-end_year: 2021
-dataset_version: singapore_vegetation
+  boundary: pokhran_rajasthan_india
+start_year: 2016
+end_year: 2026
+dataset_version: pokhran_rajasthan_india_dynamic_world
 tile_size_px: 512
 season:
   start_month: 1
   end_month: 5
 source: dynamic_world
-endpoints_only: false
-dataset: vegetation
+endpoints_only: true
+dataset: dynamic_world

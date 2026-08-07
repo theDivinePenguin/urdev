@@ -65,7 +65,7 @@ def update_pipeline_config(config_path, location_slug, location_query, start_yea
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
         
-    config['dataset']['name'] = f"urban_dataset_{location_slug}_{dataset_name}"
+    config['dataset']['name'] = f"data/urban_dataset_{location_slug}_{dataset_name}"
     config['visualizations']['years_to_mosaic'] = [start_year, end_year]
     config['regions']['osmnx_place_query'] = location_query
     
@@ -154,13 +154,13 @@ def main():
     print("[*] Running analysis generator...")
     subprocess.run([
         "python", "pipeline/generate_analysis.py", 
-        "--dataset-dir", f"urban_dataset_{slug}_{args.dataset}",
+        "--dataset-dir", f"data/urban_dataset_{slug}_{args.dataset}",
         "--start-year", str(args.start_year),
         "--end-year", str(args.end_year),
         "--dataset", args.dataset
     ])
 
-    print(f"[*] Done! Images for {args.location} generated in urban_dataset_{slug}_{args.dataset}/verification/")
+    print(f"[*] Done! Images for {args.location} generated in data/urban_dataset_{slug}_{args.dataset}/verification/")
 
 if __name__ == "__main__":
     main()

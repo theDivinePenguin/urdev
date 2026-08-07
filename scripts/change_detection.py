@@ -82,7 +82,7 @@ if __name__ == '__main__':
     with open(config_path, "r") as f:
         config = __import__("yaml").safe_load(f)
     dataset_version = config.get("dataset_version", "ghmc_new")
-    base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), f"urban_dataset_{dataset_version}")
+    base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", f"urban_dataset_{dataset_version}")
     
     start_year = config.get("start_year", 2016)
     end_year = config.get("end_year", 2026)
